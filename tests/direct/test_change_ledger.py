@@ -446,3 +446,34 @@ def test_reading_is_independent_per_source(ledger):
     cc = json.loads(c.get_reading(wid, 1, 2))
     assert a["values"]["price"] == "100"
     assert cc["values"]["price"] == "120", "per-source readings must stay unmerged"
+
+
+def test_dispute_after_close_fails_and_changes_nothing(ledger):
+    """A closed watch is final. dispute() must refuse it exactly like pull() and
+    aggregate(), and must leave the reading, the latest version and the watch's
+    current values exactly as they were."""
+    vm, c = ledger
+    wid = start(vm, c)
+    pull_all(vm, c, wid)
+    c.aggregate(wid)
+
+    vm.sender = OWNER
+    c.close_watch(wid)
+
+    before_reading = c.get_reading(wid, 1, 0)
+    before_version = c.get_version(wid, 1)
+    before_watch = c.get_watch(wid)
+
+    with pytest.raises(Exception):
+        c.dispute(wid, 1, 0, "price", "999")
+
+    assert c.get_reading(wid, 1, 0) == before_reading, "the reading must not move"
+    assert c.get_version(wid, 1) == before_version, "the latest version must not move"
+    assert c.get_watch(wid) == before_watch, "the watch must not move"
+
+    after = json.loads(c.get_watch(wid))
+    cached = json.loads(before_watch)
+    assert after["values"] == cached["values"]
+    assert after["status"] == cached["status"]
+    assert after["latest_version"] == cached["latest_version"]
+    assert after["state"] == "CLOSED"

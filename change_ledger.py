@@ -315,6 +315,8 @@ class ChangeLedger(gl.Contract):
         carries. The source is re-read; the correction is applied only if the
         fresh reading agrees with the caller and differs from what was stored."""
         w = self._load(self.watches, str(watch_id), "Watch")
+        if w["state"] != ACTIVE:
+            raise gl.vm.UserError("Watch is closed")
         v = self._load(self.versions, self._vkey(watch_id, int(version)), "Version")
         if int(version) != int(w["latest_version"]):
             raise gl.vm.UserError("Only the latest version can be disputed")

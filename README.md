@@ -4,7 +4,7 @@ A GenLayer intelligent contract that tracks a set of **published fields on a
 changing source** over time. Each observation is a node in a version chain, and
 the change set is computed by the contract rather than reported by a model.
 
-Bradbury testnet: `0x0438c77CFDb860a71ff72fD2D7bD3679dB37D10B`
+Bradbury testnet: `0x92926Cc54AA97cF82f6E60cc7B51e340Adce58a6`
 
 ---
 
@@ -78,13 +78,21 @@ version, an unknown field, or a reading that already matches.
   never becomes an empty-but-successful one
 - `pull` refuses a second read of the same source in the same round
 
+### A closed watch is final
+
+`close_watch` ends the watch. After that `pull`, `aggregate` **and `dispute`** all
+refuse it with `Watch is closed`, so nothing can move a reading, a version or the
+watch's current values once the record is closed. `tests/direct/test_change_ledger.py`
+asserts the refusal and that the reading, the latest version and the watch values
+are all byte-for-byte unchanged afterwards.
+
 ## Testing
 
 ```
 python -m pytest tests/direct -q
 ```
 
-38 direct-mode tests covering:
+39 direct-mode tests covering:
 
 - `start_watch` validation (fields, sources, `min_sources`, bounds)
 - `pull`: reading storage, duplicate pull, out-of-range index, closed watch,
